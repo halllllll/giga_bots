@@ -1,14 +1,12 @@
 package main
 
 import (
+	"bots/discord"
 	"bots/lgate"
 	"bots/loilo"
 	"bots/miraiseed"
 	"bots/utils"
-	"fmt"
 	"os"
-
-	ua "github.com/wux1an/fake-useragent"
 )
 
 func init() {
@@ -16,13 +14,26 @@ func init() {
 }
 
 func main() {
-	fmt.Println("Yo")
 	// 環境変数読み取り
-	fmt.Println(os.Getenv("LOILO_STATUS"))
+	loilo_statusUrl := os.Getenv("LOILO_STATUSURL")
+	if loilo_statusUrl == "" {
+		utils.ErrLog.Println("not found env value of loilo_statusurl")
+		return
+	}
+	discord_webhook := os.Getenv("DISCORD_WEBHOOKURL")
+	if discord_webhook == "" {
+		utils.ErrLog.Println("not found env value of discord_webhookurl")
+		return
+	}
+	dw := &discord.DiscordWebhook{
+		UserName:  "test",
+		AvatarURL: "",
+		Content:   "にゃ〜",
+		Embeds:    []discord.DiscordEmbed{},
+		TTS:       false,
+	}
+	discord.SendWebhook(discord_webhook, dw)
 	loilo.Bot()
 	lgate.Bot()
 	miraiseed.Bot()
-	for i := 0; i < 10; i++ {
-		fmt.Println(ua.Random())
-	}
 }

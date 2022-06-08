@@ -12,41 +12,41 @@ import (
 /**
 * reference: https://blog.narumium.net/2019/08/02/%E3%80%90go%E3%80%91discord%E3%81%AEwebhook%E3%81%A7%E9%80%9A%E7%9F%A5%E3%83%9C%E3%83%83%E3%83%88%E3%82%92%E4%BD%9C%E3%82%8B/
  */
-type discordImg struct {
+type DiscordImg struct {
 	URL string `json:"url"`
 	H   int    `json:"height"`
 	W   int    `json:"width"`
 }
-type discordAuthor struct {
+type DiscordAuthor struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
 	Icon string `json:"icon_url"`
 }
-type discordField struct {
-	Name   string `json:"name"`
+type DiscordField struct {
+	Name   string `json:"name"whurl`
 	Value  string `json:"value"`
 	Inline bool   `json:"inline"`
 }
-type discordEmbed struct {
+type DiscordEmbed struct {
 	Title  string         `json:"title"`
 	Desc   string         `json:"description"`
 	URL    string         `json:"url"`
 	Color  int            `json:"color"`
-	Image  discordImg     `json:"image"`
-	Thum   discordImg     `json:"thumbnail"`
-	Author discordAuthor  `json:"author"`
-	Fields []discordField `json:"fields"`
+	Image  DiscordImg     `json:"image"`
+	Thum   DiscordImg     `json:"thumbnail"`
+	Author DiscordAuthor  `json:"author"`
+	Fields []DiscordField `json:"fields"`
 }
 
-type discordWebhook struct {
+type DiscordWebhook struct {
 	UserName  string         `json:"username"`
 	AvatarURL string         `json:"avatar_url"`
 	Content   string         `json:"content"`
-	Embeds    []discordEmbed `json:"embeds"`
+	Embeds    []DiscordEmbed `json:"embeds"`
 	TTS       bool           `json:"tts"`
 }
 
-func SendWebhook(whurl string, dw *discordWebhook) (err error) {
+func SendWebhook(whurl string, dw *DiscordWebhook) (err error) {
 	j, err := json.Marshal(dw)
 	if err != nil {
 		utils.ErrLog.Printf("json err: %s\n", err)
