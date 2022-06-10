@@ -34,6 +34,11 @@ func init() {
 		utils.ErrLog.Println("not found env value of repairimg_url")
 		return
 	}
+	// 毎回呼ばれるなこれ
+	// if le := os.Getenv("LOILO_STATUS"); le == "" {
+	// 	os.Setenv("LOILO_STATUS", "NOT_OK")
+	// 	utils.InfoLog.Println("OMG NOTHING LOILO STATUS... OKAY, EASY, CAZ ME DONE, YOURWELCOME.")
+	// }
 }
 
 type Stat struct {
@@ -57,6 +62,8 @@ func (loilo *Loilo) ServerStat() (Stat, bool) {
 	target := doc.Find(".description-text").Text()
 	// 現在が正常な場合かどうかの判定
 	fmt.Println("target... : ", target, strings.Contains(target, loilo.NormalStatMsg))
+	fmt.Println("loilo.Stat:")
+	fmt.Println(loilo.Stat)
 	return loilo.Stat, strings.Contains(target, loilo.NormalStatMsg)
 }
 
