@@ -26,3 +26,6 @@ my `crontab` config is here(very straightforward, boring and simple)
 # crontab
 */5 * * * 1-5  bash /path/to/giga_bots/botsCron.sh
 ```
+
+## NOTE
+caz using [chromedp](https://github.com/chromedp/chromedp) package, required `google-chrome`.
