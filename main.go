@@ -6,6 +6,7 @@ import (
 	"bots/utils"
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"syscall"
@@ -51,32 +52,49 @@ type Loilo struct {
 	Stat
 }
 
-func (loilo *Loilo) ServerStat() (Stat, bool) {
-	doc, err := goquery.NewDocument(loilo.Url)
+func (loilo *Loilo) ServerStat() (Stat, bool, error) {
+	req, err := http.NewRequest(
+		"GET",
+		loilo.Url,
+		nil,
+	)
 	if err != nil {
-		utils.ErrLog.Printf("error at access status of %s : %v\n", loilo.Service, err)
+		return loilo.Stat, false, err
+	}
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return loilo.Stat, false, err
+	}
+	defer res.Body.Close()
+	doc, err := goquery.NewDocumentFromReader(res.Body)
+	// doc, err := goquery.NewDocument(loilo.Url)
+	if err != nil {
+		utils.ErrLog.Printf("error at reading body of %s : %v\n", loilo.Service, err)
+		return loilo.Stat, false, err
 	}
 	target := doc.Find(".description-text").Text()
 	// 現在が正常な場合かどうかの判定
-	fmt.Printf("target sentence [%s]\ncontains: [%t]\n", target, strings.Contains(target, loilo.NormalStatMsg))
+	isContainedNormalMsg := strings.Contains(target, loilo.NormalStatMsg)
+	fmt.Printf("target sentence [%s]\ncontains: [%t]\n", target, isContainedNormalMsg)
 	// 異常な場合は表示されてるメッセージを保存
 	// とりあえず何種類あるかわからないのでErrorMessageだけ
-	if !strings.Contains(target, loilo.NormalStatMsg) {
+	if !isContainedNormalMsg {
 		loilo.Stat.ErrorStatMsg = target
 	}
-	return loilo.Stat, strings.Contains(target, loilo.NormalStatMsg)
+	return loilo.Stat, isContainedNormalMsg, err
 }
 
 type LGate struct {
 	Stat
 }
 
-func (lgate *LGate) ServerStat() (Stat, bool) {
+func (lgate *LGate) ServerStat() (Stat, bool, error) {
 	// 単純にhtmlをもってくるだけではダメな作りなのでヘッドレスブラウザを起動する
 	// user-agent
 	ua, err := useragent.Desktop()
 	if err != nil {
-		utils.ErrLog.Printf("can't generate User-Agent %s\nusing default\n", err)
+		utils.InfoLog.Printf("can't generate User-Agent %s\nusing default\n", err)
 		ua = `Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36`
 	}
 	// options いろいろあるけど今回はuser-agentだけ
@@ -103,7 +121,7 @@ func (lgate *LGate) ServerStat() (Stat, bool) {
 	)
 	if err != nil {
 		utils.ErrLog.Printf("error occured `chromedp.Run`: %s\n", err)
-		return lgate.Stat, false
+		return lgate.Stat, false, err
 	}
 	dom, err := goquery.NewDocumentFromReader(strings.NewReader(wholeHtml))
 	if err != nil {
@@ -111,14 +129,15 @@ func (lgate *LGate) ServerStat() (Stat, bool) {
 	}
 	target := dom.Find("div.mb-2:nth-child(2)").Text()
 	// 現在が正常な場合かどうかの判定
-	fmt.Printf("target sentence [%s]\ncontains: [%t]\n", target, strings.Contains(target, lgate.NormalStatMsg))
+	isContainedNormalMsg := strings.Contains(target, lgate.NormalStatMsg)
+	fmt.Printf("target sentence [%s]\ncontains: [%t]\n", target, isContainedNormalMsg)
 	// 異常な場合は表示されてるメッセージを保存
 	// とりあえず何種類あるかわからないのでErrorMessageだけ
-	if !strings.Contains(target, lgate.NormalStatMsg) {
+	if !isContainedNormalMsg {
 		lgate.Stat.ErrorStatMsg = target
 	}
 
-	return lgate.Stat, strings.Contains(target, lgate.NormalStatMsg)
+	return lgate.Stat, isContainedNormalMsg, err
 }
 
 type MiraiSeed struct {
@@ -126,12 +145,15 @@ type MiraiSeed struct {
 }
 
 type Bot interface {
-	ServerStat() (Stat, bool)
+	ServerStat() (Stat, bool, error)
 }
 
 func Run(bot Bot) error {
 	// 正常な場合はOK==true
-	stat, ok := bot.ServerStat()
+	stat, ok, err := bot.ServerStat()
+	if err != nil {
+		return err
+	}
 	// 環境変数に固定でない値を入れるとcronでしんどいのでオールドスタイルに設定ファイルでいくぜ
 	serviceName := stat.Service
 	pre, err := config.GetConfig("ServiceStat", serviceName)
@@ -163,7 +185,7 @@ func Run(bot Bot) error {
 		}
 	} else {
 		// 前回と変わらない値のはず
-		utils.StdLog.Printf("[%s][Negative] pre: %s\n", serviceName, pre)
+		utils.StdLog.Printf("[%s][STAY] pre: %s\n", serviceName, pre)
 		return nil
 	}
 
@@ -202,8 +224,9 @@ func main() {
 		},
 	}
 	var bot Bot = loilo
-	Run(bot)
-
+	if err := Run(bot); err != nil {
+		utils.ErrLog.Println(err)
+	}
 	// l_gate
 	lgate := &LGate{
 		Stat: Stat{
@@ -213,7 +236,9 @@ func main() {
 		},
 	}
 	bot = lgate
-	Run(bot)
+	if err := Run(bot); err != nil {
+		utils.ErrLog.Println(err)
+	}
 	// miraiseed
 
 	// 不要？
