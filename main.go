@@ -21,6 +21,8 @@ var (
 	discord_webhookUrl string
 	cautionImg_url     string
 	repairImg_url      string
+	loilo_avatar_img   string
+	lgate_avatar_img   string
 )
 
 func init() {
@@ -37,6 +39,9 @@ func init() {
 	if repairImg_url == "" {
 		utils.ErrLog.Fatalln("not found env value of repairimg_url")
 	}
+	// なくてもいいことにする
+	loilo_avatar_img = os.Getenv("LOILO_AVATARIMG_ID")
+	lgate_avatar_img = os.Getenv("LGATE_AVATARIMG_ID")
 }
 
 type Stat struct {
@@ -46,6 +51,7 @@ type Stat struct {
 	NormalStatMsg      string
 	ErrorStatMsg       string
 	MaintenanceStatMsg string
+	AvatorImgId        string
 }
 
 type Loilo struct {
@@ -193,7 +199,7 @@ func Run(bot Bot) error {
 	// このへんはあとでわけるのをかんがえます
 	dw := &discord.DiscordWebhook{
 		UserName:  fmt.Sprintf("%s_監視ちゃん", serviceName),
-		AvatarURL: "",
+		AvatarURL: fmt.Sprintf("http://drive.google.com/uc?export=view&id=%s", stat.AvatorImgId),
 		Content:   msg,
 		Embeds:    []discord.DiscordEmbed{},
 		TTS:       false,
@@ -217,10 +223,10 @@ func main() {
 	// loilo
 	loilo := &Loilo{
 		Stat: Stat{
-			Service: "loilo",
-			Url:     "https://status.loilonote.app/ja",
-			// CfgName:       "LOILO_STATUS",
+			Service:       "loilo",
+			Url:           "https://status.loilonote.app/ja",
 			NormalStatMsg: "すべてのサービスが正常に稼働しています",
+			AvatorImgId:   loilo_avatar_img,
 		},
 	}
 	var bot Bot = loilo
@@ -233,6 +239,7 @@ func main() {
 			Service:       "l_gate",
 			Url:           "https://l-gate-status.info",
 			NormalStatMsg: "正常に動作しています",
+			AvatorImgId:   lgate_avatar_img,
 		},
 	}
 	bot = lgate
